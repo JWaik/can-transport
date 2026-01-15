@@ -7,6 +7,7 @@
  * Copyright (c) 2026 Jatuporn Waikoonvet
  */
 #pragma once
+#include <CANManager_config.h>
 #if CANMGR_ENABLED
 #include <cstdint>
 
@@ -32,6 +33,9 @@ public:
 
     // link protocol drivers with interfaces
     virtual bool add_interface(CAN_HandleTypeDef* hcan_iface) = 0;
+
+    // infinity loop for thread attaching
+    virtual void loop() = 0;
 
     // handler for outgoing frames
     virtual bool write_frame(CAN_TxHeaderTypeDef *tx_header,

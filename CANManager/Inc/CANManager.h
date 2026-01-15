@@ -13,7 +13,7 @@
 class CANManager
 {
 public:
-    CANManager(CAN_HandleTypeDef *hcan1 = nullptr, CAN_HandleTypeDef *hcan2 = nullptr);
+    CANManager();
 
     /* Do not allow copies */
     CANManager(const CANManager &other) = delete;
@@ -27,7 +27,11 @@ public:
         return _singleton;
     }
 
-    void init(void);
+    void init(CAN_HandleTypeDef *hcan1 = nullptr, CAN_HandleTypeDef *hcan2 = nullptr);
+
+    // call driver backend loop
+    void loop_can1();
+    void loop_can2();
 
     //  used to identify different protocol drivers
     enum class Protocol : uint8_t {

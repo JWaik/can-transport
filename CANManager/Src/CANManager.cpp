@@ -13,8 +13,7 @@
 
 CANManager* CANManager::_singleton;
 
-CANManager::CANManager(CAN_HandleTypeDef *hcan1, CAN_HandleTypeDef *hcan2) :
-    _hcan{hcan1, hcan2}
+CANManager::CANManager()
 {
     for (uint8_t i = 0; i < CANMGR_MAX_CAN_DRIVERS; i++) {
         _drivers[i] = nullptr;
@@ -23,7 +22,7 @@ CANManager::CANManager(CAN_HandleTypeDef *hcan1, CAN_HandleTypeDef *hcan2) :
     _singleton = this;
 }
 
-void CANManager::init(void)
+void CANManager::init(CAN_HandleTypeDef *hcan1, CAN_HandleTypeDef *hcan2)
 {
     // TODO: get semaphore
     // Noted
@@ -32,25 +31,26 @@ void CANManager::init(void)
     //         2.After we exit the functoin that sem is called -> sem object destructed! -> give semaphore
     // It's convenience
 
+    // Get CAN handle from main program
+    _hcan[CANMGR_CAN1_IDX] = hcan1;
+    _hcan[CANMGR_CAN2_IDX] = hcan2;
+
     _num_drivers = 0;
     
     // TODO:: logging
 
+    // Set driver type for CAN1, CAN2 drivers
+    Protocol drv_type[CANMGR_MAX_CAN_DRIVERS] = {(Protocol)CANMGR_CAN1_DRIVER_TYPE, (Protocol)CANMGR_CAN2_DRIVER_TYPE};
+
     // for iterating to construct driver
-    Protocol drv_type[CANMGR_MAX_CAN_DRIVERS] = {};
     for (uint8_t i = 0; i < CANMGR_MAX_CAN_IFACES; i++) {
-        //todo: get driver config from user 1,2,3...
-        uint8_t drv_num = 1;
-        if (drv_num == 0 || drv_num > CANMGR_MAX_CAN_DRIVERS) {
+
+        // CAN handle type is not created or initialized
+        if (_hcan[i] == nullptr || _hcan[i]->State == HAL_CAN_STATE_RESET) {
             continue;
         }
-        drv_num--;
 
-        // if hal empty -> return ?? pass hal from main? TODO: make decision bout this
-        // if (_hcan[i] == nullptr) {
-        //     continue;
-        // }
-
+#if CANMGR_CUBEMX_CAN_ENABLED == DISABLED
         // todo: use parameters, or create auto-adjust
         // add support can2
         _hcan[i]->Instance = CAN1;
@@ -72,10 +72,11 @@ void CANManager::init(void)
             // Error_Handler();
             continue;
         }
+#endif
 
-        if (_drivers[drv_num] != nullptr) {
-            //We already initialised the driver just add interface and move on
-            _drivers[drv_num]->add_interface(_hcan[i]);
+        if (_drivers[i] != nullptr) {
+            // We already initialised the driver just add interface and move on
+            _drivers[i]->add_interface(_hcan[i]);
             continue;
         }
 
@@ -84,26 +85,23 @@ void CANManager::init(void)
             // Error
         }
 
-        // TODO get driver type from USER Config when build
-        // drv_type[i] = ...
         switch (drv_type[i]) {
         case Protocol::DroneCAN:
-            // TODO: _drivers[MAX_CAN_DRIVERS] = .... construct DroneCAN lib
+            // TODO: _drivers[i] = .... construct DroneCAN lib
             break;
         case Protocol::MultiCAN:
-            // TODO: _drivers[MAX_CAN_DRIVERS] = .... construct MultiCAN lib
+            // TODO: _drivers[i] = .... construct MultiCAN lib
             break;
         default:
             continue;
         }
 
         _num_drivers++;
-        _drivers[drv_num]->add_interface(_hcan[i]);
+        _drivers[i]->add_interface(_hcan[i]);
     }
 
     for (uint8_t drv_num = 0; drv_num < CANMGR_MAX_CAN_DRIVERS; drv_num++) {
-        //initialise all the Drivers
-
+        // initialise all the Drivers
         // Cache the driver type.
         _driver_type_cache[drv_num] = drv_type[drv_num];
 
@@ -115,7 +113,24 @@ void CANManager::init(void)
     }
 }
 
-#if CANMGR_USE_CUBEMX == DISABLED
+void CANManager::loop_can1()
+{
+    if (_drivers[CANMGR_CAN1_IDX] == nullptr) {
+        return;
+    }
+    // TODO: don't forget to check is_initialized() in driver
+    _drivers[CANMGR_CAN1_IDX]->loop();
+}
+
+void CANManager::loop_can2()
+{
+    if (_drivers[CANMGR_CAN2_IDX] == nullptr) {
+        return;
+    }
+    _drivers[CANMGR_CAN2_IDX]->loop();
+}
+
+#if CANMGR_CUBEMX_CAN_ENABLED == DISABLED
 extern "C"
 {
 void HAL_CAN_MspInit(CAN_HandleTypeDef* canHandle)
@@ -171,5 +186,5 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef *canHandle)
     }
 }
 }
-#endif // CANMGR_USE_CUBEMX
+#endif // CANMGR_CUBEMX_CAN_ENABLED
 #endif // CANMGR_ENABLED
