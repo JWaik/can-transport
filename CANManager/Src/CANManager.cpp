@@ -9,15 +9,16 @@
 
 #include "CANManager.h"
 
+#if CANMGR_ENABLED
 
 CANManager* CANManager::_singleton;
 
-CANManager::CANManager()
+CANManager::CANManager(CAN_HandleTypeDef *hcan1, CAN_HandleTypeDef *hcan2) :
+    _hcan{hcan1, hcan2}
 {
-    for (uint8_t i = 0; i < MAX_CAN_DRIVERS; i++) {
+    for (uint8_t i = 0; i < CANMGR_MAX_CAN_DRIVERS; i++) {
         _drivers[i] = nullptr;
         _driver_type_cache[i] = Protocol::None;
-        _hcan[i] = nullptr;
     }
     _singleton = this;
 }
@@ -36,11 +37,11 @@ void CANManager::init(void)
     // TODO:: logging
 
     // for iterating to construct driver
-    Protocol drv_type[MAX_CAN_DRIVERS] = {};
-    for (uint8_t i = 0; i < MAX_CAN_IFACES; i++) {
+    Protocol drv_type[CANMGR_MAX_CAN_DRIVERS] = {};
+    for (uint8_t i = 0; i < CANMGR_MAX_CAN_IFACES; i++) {
         //todo: get driver config from user 1,2,3...
         uint8_t drv_num = 1;
-        if (drv_num == 0 || drv_num > MAX_CAN_DRIVERS) {
+        if (drv_num == 0 || drv_num > CANMGR_MAX_CAN_DRIVERS) {
             continue;
         }
         drv_num--;
@@ -78,7 +79,7 @@ void CANManager::init(void)
             continue;
         }
 
-        if (_num_drivers >= MAX_CAN_DRIVERS) {
+        if (_num_drivers >= CANMGR_MAX_CAN_DRIVERS) {
             // We are exceeding number of drivers,
             // Error
         }
@@ -100,7 +101,7 @@ void CANManager::init(void)
         _drivers[drv_num]->add_interface(_hcan[i]);
     }
 
-    for (uint8_t drv_num = 0; drv_num < MAX_CAN_DRIVERS; drv_num++) {
+    for (uint8_t drv_num = 0; drv_num < CANMGR_MAX_CAN_DRIVERS; drv_num++) {
         //initialise all the Drivers
 
         // Cache the driver type.
@@ -114,9 +115,9 @@ void CANManager::init(void)
     }
 }
 
+#if CANMGR_USE_CUBEMX == DISABLED
 extern "C"
 {
-
 void HAL_CAN_MspInit(CAN_HandleTypeDef* canHandle)
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -128,12 +129,12 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* canHandle)
         __HAL_RCC_GPIOD_CLK_ENABLE();
 
         // TODO: User config pin
-        GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1;
-        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-        GPIO_InitStruct.Alternate = GPIO_AF9_CAN1;
-        HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin = CANMGR_CAN1_GPIO_PIN_RX | CANMGR_CAN1_GPIO_PIN_TX;
+        GPIO_InitStruct.Mode = CANMGR_GPIO_MODE;
+        GPIO_InitStruct.Pull = CANMGR_GPIO_PULL;
+        GPIO_InitStruct.Speed = CANMGR_GPIO_SPEED;
+        GPIO_InitStruct.Alternate = CANMGR_GPIO_AF_MAP;
+        HAL_GPIO_Init(CANMGR_CAN1_GPIO_PORT, &GPIO_InitStruct);
 
         /* interrupt Init */
         HAL_NVIC_SetPriority(CAN1_TX_IRQn, 0, 0);
@@ -157,7 +158,7 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef *canHandle)
         __HAL_RCC_CAN1_CLK_DISABLE();
 
         // TODO: User Config Pin
-        HAL_GPIO_DeInit(GPIOD, GPIO_PIN_0 | GPIO_PIN_1);
+        HAL_GPIO_DeInit(CANMGR_CAN1_GPIO_PORT, CANMGR_CAN1_GPIO_PIN_TX | CANMGR_CAN1_GPIO_PIN_RX);
 
         /* Interrupt Deinit */
         HAL_NVIC_DisableIRQ(CAN1_TX_IRQn);
@@ -170,3 +171,5 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef *canHandle)
     }
 }
 }
+#endif // CANMGR_USE_CUBEMX
+#endif // CANMGR_ENABLED

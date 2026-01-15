@@ -7,7 +7,7 @@
  * Copyright (c) 2026 Jatuporn Waikoonvet
  */
 #pragma once
-
+#if CANMGR_ENABLED
 #include <cstdint>
 
 #ifdef __cplusplus
@@ -39,3 +39,4 @@ public:
                              uint32_t *tx_mailbox,
                              const uint32_t timeout_us) { return false; }
 };
+#endif // CANMGR_ENABLED

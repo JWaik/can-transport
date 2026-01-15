@@ -7,15 +7,13 @@
  * Copyright (c) 2026 Jatuporn Waikoonvet
  */
 #pragma once
-
+#include "CANManager_config.h"
+#if CANMGR_ENABLED
 #include "CANDriver.h"
-
-#define MAX_CAN_DRIVERS 2
-#define MAX_CAN_IFACES 2
 class CANManager
 {
 public:
-    CANManager();
+    CANManager(CAN_HandleTypeDef *hcan1 = nullptr, CAN_HandleTypeDef *hcan2 = nullptr);
 
     /* Do not allow copies */
     CANManager(const CANManager &other) = delete;
@@ -48,11 +46,13 @@ public:
 
 private:
 
-    CANDriver* _drivers[MAX_CAN_DRIVERS];         // Store Backend driver
-    Protocol _driver_type_cache[MAX_CAN_DRIVERS]; // Cache driver protocol, use with get_driver_type()
-    CAN_HandleTypeDef* _hcan[MAX_CAN_DRIVERS];    // CAN handler from HAL
+    CANDriver* _drivers[CANMGR_MAX_CAN_DRIVERS];         // Store Backend driver
+    Protocol _driver_type_cache[CANMGR_MAX_CAN_DRIVERS]; // Cache driver protocol, use with get_driver_type()
+    CAN_HandleTypeDef* _hcan[CANMGR_MAX_CAN_DRIVERS];    // CAN handler from HAL
 
     uint8_t _num_drivers;   // Total number of initialized drivers.
 
     static CANManager *_singleton;  // Object pointer, for singleton checking
 };
+
+#endif //CANMGR_ENABLED
