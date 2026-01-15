@@ -21,11 +21,10 @@ public:
     CANManager(const CANManager &other) = delete;
     CANManager &operator=(const CANManager&) = delete;
 
-
     static CANManager* get_singleton()
     {
         if (_singleton == nullptr) {
-            // todo: assert some false
+            // todo: assert some error-handler
         }
         return _singleton;
     }
@@ -39,12 +38,8 @@ public:
         MultiCAN = 2,
     };
 
-    // register a new driver
-    bool register_driver(Protocol driver_type, CANDriver *driver);
-    
     // return driver type index i
-    Protocol get_driver_type(uint8_t i) const
-    {
+    Protocol get_driver_type(uint8_t i) const {
         if (i < sizeof(_driver_type_cache)/sizeof(_driver_type_cache[0])) {
             return _driver_type_cache[i];
         }
@@ -53,9 +48,11 @@ public:
 
 private:
 
-    CANDriver* _drivers[MAX_CAN_DRIVERS];
-    Protocol _driver_type_cache[MAX_CAN_DRIVERS];
-    CAN_HandleTypeDef* _hcan[MAX_CAN_DRIVERS];
-    uint8_t _num_drivers;
-    static CANManager *_singleton;
+    CANDriver* _drivers[MAX_CAN_DRIVERS];         // Store Backend driver
+    Protocol _driver_type_cache[MAX_CAN_DRIVERS]; // Cache driver protocol, use with get_driver_type()
+    CAN_HandleTypeDef* _hcan[MAX_CAN_DRIVERS];    // CAN handler from HAL
+
+    uint8_t _num_drivers;   // Total number of initialized drivers.
+
+    static CANManager *_singleton;  // Object pointer, for singleton checking
 };

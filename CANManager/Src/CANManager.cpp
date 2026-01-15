@@ -51,6 +51,7 @@ void CANManager::init(void)
         // }
 
         // todo: use parameters, or create auto-adjust
+        // add support can2
         _hcan[i]->Instance = CAN1;
         _hcan[i]->Init.Prescaler = 3;
         _hcan[i]->Init.Mode = CAN_MODE_NORMAL;
@@ -115,6 +116,7 @@ void CANManager::init(void)
 
 extern "C"
 {
+
 void HAL_CAN_MspInit(CAN_HandleTypeDef* canHandle)
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -124,10 +126,8 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* canHandle)
         __HAL_RCC_CAN1_CLK_ENABLE();
 
         __HAL_RCC_GPIOD_CLK_ENABLE();
-        /**CAN GPIO Configuration
-        PD0     ------> CAN1_RX
-        PD1     ------> CAN1_TX
-        */
+
+        // TODO: User config pin
         GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1;
         GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
         GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -143,6 +143,10 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* canHandle)
         HAL_NVIC_SetPriority(CAN1_RX1_IRQn, 0, 0);
         HAL_NVIC_EnableIRQ(CAN1_RX1_IRQn);
     }
+    else if (canHandle->Instance == CAN2)
+    {
+        // TODO:
+    }
 }
 
 void HAL_CAN_MspDeInit(CAN_HandleTypeDef *canHandle)
@@ -152,16 +156,17 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef *canHandle)
         /* Peripheral clock disable */
         __HAL_RCC_CAN1_CLK_DISABLE();
 
-        /**CAN GPIO Configuration
-        PD0     ------> CAN1_RX
-        PD1     ------> CAN1_TX
-        */
+        // TODO: User Config Pin
         HAL_GPIO_DeInit(GPIOD, GPIO_PIN_0 | GPIO_PIN_1);
 
         /* Interrupt Deinit */
         HAL_NVIC_DisableIRQ(CAN1_TX_IRQn);
         HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
         HAL_NVIC_DisableIRQ(CAN1_RX1_IRQn);
+    }
+    else if (canHandle->Instance == CAN2)
+    {
+        // TODO:
     }
 }
 }

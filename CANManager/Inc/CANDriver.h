@@ -1,6 +1,6 @@
 /**
- * @file    
- * @brief   
+ * @file    CANDriver.h
+ * @brief   Base class for CAN driver
  *
  * SPDX-License-Identifier: MIT
  *
